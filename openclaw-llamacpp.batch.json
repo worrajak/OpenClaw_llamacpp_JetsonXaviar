@@ -1,0 +1,33 @@
+[
+  {
+    "path": "models.providers.llamacpp",
+    "value": {
+      "baseUrl": "http://127.0.0.1:8080/v1",
+      "apiKey": "sk-noop-llamacpp",
+      "auth": "api-key",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "name": "Qwen2.5 3B Instruct (llama.cpp local)",
+          "api": "openai-completions",
+          "input": ["text"],
+          "contextWindow": 32768,
+          "maxTokens": 4096,
+          "compat": {
+            "supportsTools": true,
+            "maxTokensField": "max_tokens"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "path": "models.mode",
+    "value": "merge"
+  },
+  {
+    "path": "agents.defaults.memorySearch.enabled",
+    "value": false
+  }
+]

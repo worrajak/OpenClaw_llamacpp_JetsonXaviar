@@ -1,0 +1,19 @@
+[Unit]
+Description=llama.cpp OpenAI-compatible server (for OpenClaw on Jetson Xavier)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Edit User and ExecStart for your environment.
+User=%i
+Type=simple
+Environment=LLAMA_CPP_DIR=%h/llama.cpp
+Environment=MODEL_PATH=%h/llama.cpp/models/qwen2.5-3b-instruct-q4_k_m.gguf
+ExecStart=%h/OpenClaw_llamacpp_JetsonXaviar/scripts/start-llama-server.sh
+Restart=on-failure
+RestartSec=5
+# Optional resource caps
+# MemoryMax=6G
+
+[Install]
+WantedBy=default.target
