@@ -93,6 +93,56 @@ curl -s http://127.0.0.1:8080/v1/chat/completions \
 A `systemd` unit (see [`systemd/llama-server.service`](systemd/llama-server.service))
 is provided if you want it to run on boot.
 
+### Optional: expose the server to your LAN
+
+By default `llama-server` only listens on `127.0.0.1` (localhost). To let
+another machine on your network use the same model, bind it to all
+interfaces and **always** require an API key:
+
+```bash
+# Generate a key and keep it somewhere safe (NOT in git):
+openssl rand -hex 24
+
+./build/bin/llama-server \
+    -m models/qwen2.5-3b-instruct-q4_k_m.gguf \
+    --host 0.0.0.0 --port 8080 \
+    -ngl 99 -c 32768 -fa on \
+    --api-key "<paste-the-generated-key>"
+```
+
+Find the Jetson's LAN address with `hostname -I`, then from another
+computer:
+
+```bash
+export OPENAI_BASE_URL="http://<jetson-ip>:8080/v1"
+export OPENAI_API_KEY="<the-generated-key>"
+
+curl "$OPENAI_BASE_URL/chat/completions" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"model":"qwen2.5-3b-instruct-q4_k_m.gguf",
+         "messages":[{"role":"user","content":"hello"}]}'
+```
+
+This is a standard OpenAI-compatible endpoint, so any client that speaks
+the OpenAI Chat Completions API works (LangChain, Continue.dev,
+OpenWebUI, the official `openai` SDKs, etc.).
+
+> **Security warnings**
+> - This is plain HTTP. Anyone on the same LAN can sniff the API key.
+>   Trusted home networks only. For anything else, put it behind
+>   Tailscale, WireGuard, or a TLS reverse proxy (nginx/caddy).
+> - **Never port-forward port 8080 to the public internet.**
+> - If a host firewall is active, allow the port from your LAN only,
+>   e.g. `sudo ufw allow from 192.168.0.0/16 to any port 8080 proto tcp`.
+
+If you change the API key, also update the local OpenClaw config so the
+agent on the Jetson keeps working:
+
+```bash
+openclaw config set models.providers.llamacpp.apiKey "<the-generated-key>"
+```
+
 ---
 
 ## Step 3 — Wire OpenClaw to llama.cpp
@@ -159,6 +209,10 @@ install the Gateway service (interactive — needs a real TTY).
   fully-qualified id: `llamacpp/qwen2.5-3b-instruct-q4_k_m.gguf`.
 - **`-fa` syntax** — newer llama.cpp requires
   `-fa on` (or `auto`/`off`); the bare flag form is rejected.
+- **OpenClaw agent timeout on cold cache** — first turn after a server
+  restart processes ~16 k tokens of system prompt and can exceed the
+  default agent timeout. Bump it once with
+  `openclaw config set agents.defaults.timeoutSeconds 600`.
 
 ---
 
